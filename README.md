@@ -1,115 +1,87 @@
-# Adaptive Sampling in Monte Carlo Ray Tracing Using Evolutionary Hill Climbing
-## Overview
+# Adaptive Sampling in Monte Carlo Ray Tracing
 
-Monte Carlo ray tracing is a physically based rendering technique that estimates pixel colors by randomly sampling light transport paths. While it produces high-quality images, it is computationally expensive because a large number of rays must be traced per pixel to reduce noise.
+This project explores adaptive per-pixel sampling in a simple Monte Carlo ray tracer.
 
-This project explores **adaptive per-pixel sampling** as an optimization problem. Instead of assigning the same number of samples to every pixel, we learn how to distribute samples across the image so that difficult regions receive more rays while easy regions receive fewer.
+Instead of giving every pixel the same number of samples, the program uses an evolutionary hill-climbing optimizer to search for a samples-per-pixel map. Pixels that are harder to render can receive more samples, while simpler pixels can receive fewer.
 
-To achieve this, we treat the ray tracer as a black box and use an **evolutionary hill-climbing algorithm** to optimize the sampling pattern.
+The ray tracing code is intentionally simple and is based on *Ray Tracing in One Weekend*. The focus of this project is the optimization idea, not building a complex renderer.
 
-## Problem Context
+## What The Project Shows
 
-Monte Carlo integration exhibits non-uniform variance across an image:
+- A high-sample reference render.
+- A final render using an optimized per-pixel sampling map.
+- A grayscale SPP map that visualizes the final samples-per-pixel choices.
 
-Smooth regions (sky, flat surfaces) converge quickly
+## Example Output
 
-Edges, silhouettes, and geometry boundaries require many more samples
+| Reference | Adaptive Result | SPP Map |
+| --- | --- | --- |
+| ![Reference render](docs/images/reference.png) | ![Adaptive render](docs/images/ga_result.png) | ![SPP map](docs/images/spp_map.png) |
 
-Uniform sampling wastes computation on low-variance pixels.
+In the SPP map:
 
-The goal of this project is to learn where Monte Carlo integration is difficult and allocate samples accordingly.
+- Darker pixels used fewer samples.
+- Brighter pixels used more samples.
 
-## Optimization Formulation
-### Decision Variables
+This makes the optimizer easier to explain because the project does not only show the final image; it also shows the sampling decisions behind that image. In this small demo scene, the map can still look noisy because the renderer and optimizer are intentionally simple.
 
-A vector spp_map of length N (number of pixels)
+## How It Works
 
-Each element represents the number of samples per pixel (SPP)
+1. Render a high-sample reference image.
+2. Create random sampling maps.
+3. Render candidate images using those maps.
+4. Measure each candidate with mean squared error against the reference.
+5. Keep the better candidate.
+6. Mutate the winner to create the next candidate.
+7. Save the final adaptive render and the final SPP map.
 
-### Objective Function
+## Build And Run
 
-Minimize Mean Squared Error (MSE) between:
+```bash
+cmake -S . -B build
+cmake --build build
+./build/Ray_Tracer
+```
 
-a high-quality reference image
+The program writes these files in the directory where it is run:
 
-a candidate image rendered with the current spp_map
+```text
+reference.ppm
+ga_result.ppm
+spp_map.ppm
+```
 
-### Constraints
+Many image viewers can open `.ppm` files directly. If needed, they can also be converted to `.png` with ImageMagick:
 
-1 ≤ spp ≤ max_spp for each pixel
+```bash
+magick reference.ppm reference.png
+magick ga_result.ppm ga_result.png
+magick spp_map.ppm spp_map.png
+```
 
-### Optimization Method
+## Portfolio Explanation
 
-(1+1) Evolutionary Strategy / Stochastic Hill Climbing
+This project demonstrates adaptive sampling for Monte Carlo ray tracing. A simple evolutionary hill-climbing algorithm searches for how many samples each pixel should receive. The final render uses the optimized sampling map, and the SPP visualization shows where the program spent more computation.
 
-Mutation-only search with tournament selection
+## Main Files
 
-No crossover (not meaningful for per-pixel sampling maps)
+- `main.cpp`: builds the scene, runs the optimization loop, and saves output images.
+- `camera.h`: simple ray tracing camera and render-to-buffer logic.
+- `ga.h`: individual representation, tournament selection, and mutation.
+- `fitness.h`: MSE fitness calculation and PPM output helpers.
 
-## Methodology
+## Complexity
 
-Render a reference image using a high number of samples per pixel
+Let:
 
-Initialize random sampling maps (individuals)
+- `N` be the number of pixels.
+- `R_ref` be the samples per pixel for the reference image.
+- `R_avg` be the average samples per pixel for an adaptive candidate.
+- `G` be the number of generations.
 
-Iteratively:
+High-level cost:
 
-Render images using the candidate sampling maps
-
-Evaluate fitness using MSE
-
-Select the better individual
-
-Apply small random mutations to generate a new candidate
-
-After convergence, render the final image using the optimized sampling map
-
-## Key Insight
-
-The evolutionary process implicitly learns a variance map of the image:
-
-Pixels that contribute more noise receive more samples
-
-Easy pixels receive fewer samples
-
-This allows near-reference image quality using significantly fewer total rays.
-
-## Implementation Notes
-
-Ray tracing core is based on Ray Tracing in One Weekend
-
-The optimizer is implemented independently and treats the renderer as a black box
-
-All optimization logic is contained in:
-
-ga.h
-
-fitness.h
-
-## Time & Space Complexity (High Level)
-
-Reference rendering: O(N · R_ref)
-
-Per generation rendering: O(N · R_avg)
-
-Total optimization: O(G · N · R_avg)
-
-Memory usage: O(N)
-
-Where:
-
-N = number of pixels
-
-R_ref = reference samples per pixel
-
-R_avg = average samples per pixel during optimization
-
-G = number of generations
-
-## Output
-
-High-quality reference image
-
-Final GA-optimized image
-
-Learned per-pixel sampling behavior
+- Reference render: `O(N * R_ref)`
+- Each generation: `O(N * R_avg)`
+- Full optimization: `O(G * N * R_avg)`
+- Memory usage: `O(N)`

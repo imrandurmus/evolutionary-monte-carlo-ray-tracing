@@ -27,7 +27,7 @@ Individual rand_ind(int pixel_count, int max_spp) {
 
     //O(n) n being the number of elements inside the spp_map vector
     for (int i = 0; i < pixel_count; i++) {
-        ind.spp_map.at(i) = int(random_double() * max_spp);
+        ind.spp_map.at(i) = 1 + int(random_double() * max_spp);
     }
 
     //making the fitness the worst by default so that non-evaluated individuals don't sneak in
@@ -41,7 +41,7 @@ Individual rand_ind(int pixel_count, int max_spp) {
 inline void mutate(Individual& ind, int max_spp)
 {
     for (int i = 0; i < ind.spp_map.size(); i++) {
-        if (random_double() < 0.5) {        // 5% chance per pixel
+        if (random_double() < 0.5) {        // 50% chance per pixel
             int d = (random_double() < 0.5) ? -1 : 1;
             ind.spp_map.at(i) += d;
 

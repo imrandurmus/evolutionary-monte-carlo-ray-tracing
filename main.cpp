@@ -41,6 +41,9 @@ int main() {
     int image_height = int(cam.image_width / cam.aspect_ratio);
     int pixel_count = cam.image_width * image_height;
     int max_spp = 120;
+    int generations = 20;
+
+    save_ppm(reference, cam.image_width, image_height, "reference.ppm");
 
 
     //Time Complexity: O(N) N being the amount of pixels per individual
@@ -54,10 +57,7 @@ int main() {
     // Ravg = average samples per pixel during GA
     // Total Time Complexity: O(G * N * Ravg)
     // Space Complexity: O(N) for images and individuals
-    for (int gen = 0; gen < 2; gen++) {
-//5.73256e-05
-        //5.1133e-05
-
+    for (int gen = 0; gen < generations; gen++) {
         // Render individual A
         // Time Complexity: O(N * Ravg)
         // Space Complexity: O(N)
@@ -83,6 +83,7 @@ int main() {
         // Space Complexity: O(1)
         Individual child = winner;
         mutate(child, max_spp);
+        child.fitness = 1e30;
 
         // Replace population
         // Time Complexity: O(1)
@@ -97,7 +98,7 @@ int main() {
     // Select final best individual
     // Time Complexity: O(1)
     // Space Complexity: O(1)
-    Individual best = tournament(a, b);
+    Individual best = a;
 
     // Render final GA optimized image
     // Time Complexity: O(N * Ravg)
@@ -109,6 +110,7 @@ int main() {
     // Time Complexity: O(N)
     // Space Complexity: O(1)
     save_ppm(final_img, cam.image_width, image_height, "ga_result.ppm");
+    save_spp_map(best.spp_map, cam.image_width, image_height, max_spp, "spp_map.ppm");
 
 
 }
